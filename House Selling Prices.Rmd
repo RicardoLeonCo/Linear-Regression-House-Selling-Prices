@@ -1,0 +1,321 @@
+---
+title: "House Selling Prices"
+author: "Ricardo Leon Coronado"
+date: "11/16/2021"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(mosaic)
+library(pander)
+
+options(scipen = 999)
+```
+
+
+```{r}
+train <- read.csv("C:/Users/ricle/OneDrive - BYU-Idaho/Fall 21/Statistics-Notebook-master(1)/Statistics-Notebook-master/Analyses/Math425/HouseSellingPrices/train.csv", stringsAsFactors=TRUE)
+View(train)
+```
+
+## The lm
+
+```{r}
+# Models
+
+train1 <- train %>% 
+  mutate(TotalSF = X1stFlrSF + X2ndFlrSF + TotalBsmtSF, 
+         BathTotal = FullBath + HalfBath/2, 
+         BathTotal = as.factor(BathTotal),
+         BathTotal = as.factor(case_when(
+           BathTotal %in% c(0, 0.5, 1, 1.5) ~ 0,
+           BathTotal %in% c(2, 2.5) ~ 1,
+           BathTotal %in% c(3, 3.5) ~ 2)),
+         YrBuilt01 = as.factor(ifelse(YearBuilt > 1946, 1, 0)),
+         FireplacesCat = as.factor(ifelse(Fireplaces > 0, 0, 1)),
+         OverallQualCat = as.factor(ifelse(OverallQual %in% c(1:5), 0, 1)),
+         GarageCarsCat = as.factor(ifelse(GarageCars %in% c(0:2), 0, 1)))
+
+#table(train1$BathTotal)
+
+#pairs(train1[c(1:10, 81)], panel = panel.smooth)
+#mylm <- lm(SalePrice ~ TotalSF, data = train1) #0.6117
+
+# # Input your lm(Y ~ ... ,data=rbdata)
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal, data = train1) #0.6282  #replace the "1" with your model
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal:TotalSF, data = train1) #0.6292 #got rid of change in intercepts and added the bathtotal with totalsf. 
+# 
+# #Using the YR built into the mix.
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal:TotalSF + YrBuilt01, data = train1) #0.6451 #Added YrBuilt into the mix as a factor. 1946><
+# 
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal:TotalSF + YrBuilt01 + YrBuilt01:TotalSF, data = train1) #0.6464 #Added the interaction term of YrBuilt with TotalSF into the mix.
+# 
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal:TotalSF + YrBuilt01:TotalSF, data = train1) #0.6467 #Dropped the YrBuilt01 alone and left the interaction term of YrBuilt with TotalSF into the mix.
+# 
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal:TotalSF + YrBuilt01:TotalSF + CentralAir, data = train1) #0.6536 #I added Central Air
+# 
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal:TotalSF + YrBuilt01:TotalSF + CentralAir:TotalSF, data = train1) #0.6572 #I added the Central Air:TotalSF and took away the CentralAir
+# 
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal:TotalSF + YrBuilt01:TotalSF + CentralAir:TotalSF + Fireplaces, data = train1) #0.6683 #I added Fireplaces
+# 
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal:TotalSF + YrBuilt01:TotalSF + CentralAir:TotalSF + Fireplaces + GarageCars:TotalSF, data = train1) #0.7348 #I added Garage Cars
+# 
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal:TotalSF + YrBuilt01:TotalSF + CentralAir:TotalSF + Fireplaces + GarageCars:TotalSF + OverallQual, data = train1) #0.7918 #I added OverallQual
+# 
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal:TotalSF + YrBuilt01:TotalSF + CentralAir:TotalSF + Fireplaces + GarageCars:TotalSF + OverallQual + GrLivArea, data = train1) #0.7935 #I added GrLivArea
+# 
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal:TotalSF + YrBuilt01:TotalSF + CentralAir:TotalSF + Fireplaces + GarageCars:TotalSF + OverallQual + GrLivArea + GrLivArea:TotalSF, data = train1) #0.8026 #I added GrLivArea:TotalSF
+# 
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal:TotalSF + YrBuilt01:TotalSF + CentralAir:TotalSF + Fireplaces + GarageCars:TotalSF + OverallQual + GrLivArea + GrLivArea:TotalSF + GarageArea, data = train1) #0.8037 #I added GarageArea
+# 
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal:TotalSF + YrBuilt01:TotalSF + CentralAir:TotalSF + Fireplaces + GarageCars:TotalSF + OverallQual + GrLivArea + GrLivArea:TotalSF + GarageArea + GarageArea:TotalSF, data = train1) #0.8043 #I added GarageArea:TotalSF
+# 
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal:TotalSF + YrBuilt01:TotalSF + CentralAir:TotalSF + FireplacesCat + GarageCars:TotalSF + OverallQual + GrLivArea + GrLivArea:TotalSF + GarageArea + GarageArea:TotalSF, data = train1) #0.8025 #I replaced FireplacesCat
+# 
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal + BathTotal:TotalSF + YrBuilt01:TotalSF + CentralAir:TotalSF + Fireplaces + GarageCars:TotalSF + OverallQual + GrLivArea + GrLivArea:TotalSF + GarageArea + GarageArea:TotalSF, data = train1) #8119 #I reordered them and took out YrBuilt01
+# 
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal + BathTotal:TotalSF + YrBuilt01:TotalSF + CentralAir + CentralAir:TotalSF + Fireplaces + GarageCars:TotalSF + OverallQual + GrLivArea + GrLivArea:TotalSF + GarageArea + GarageArea:TotalSF, data = train1) #8135 #Added Central Air individually
+# 
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal + BathTotal:TotalSF + YrBuilt01:TotalSF + CentralAir:TotalSF + FireplacesCat + GarageCars:TotalSF + OverallQual + GrLivArea + GrLivArea:TotalSF + GarageArea + GarageArea:TotalSF, data = train1) #8119 #I reordered them and took out YrBuilt01
+# 
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal + BathTotal:TotalSF + YrBuilt01:TotalSF + CentralAir:TotalSF + FireplacesCat + GarageCars:TotalSF + OverallQualCat + GrLivArea + GrLivArea:TotalSF + GarageArea + GarageArea:TotalSF, data = train1) #7693 #I replaced OverallQualCat
+# 
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal + BathTotal:TotalSF + YrBuilt01:TotalSF + CentralAir:TotalSF + FireplacesCat + GarageCars:TotalSF + OverallQualCat + OverallQualCat:TotalSF + GrLivArea + GrLivArea:TotalSF + GarageArea + GarageArea:TotalSF, data = train1) #0.7857 #I added OverallQualCat:TotalSF
+# 
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal + BathTotal:TotalSF + YrBuilt01:TotalSF + CentralAir:TotalSF + FireplacesCat + GarageCars:TotalSF + OverallQualCat + OverallQualCat:TotalSF + GrLivArea + GrLivArea:TotalSF + GarageArea + GarageArea:TotalSF, data = train1) #0.7857 After trying all options I decided to stick with these.
+# 
+# #Lizs try
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal + BathTotal:TotalSF + YrBuilt01:TotalSF + CentralAir:TotalSF + FireplacesCat + GarageCars:TotalSF + OverallQualCat + OverallQualCat:TotalSF + GrLivArea + GrLivArea:TotalSF +FireplacesCat:TotalSF, data = train1) #0.7857 After trying all options I decided to stick with these.
+# 
+# #THIS WORKS!!!
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal  + GarageCars:TotalSF + OverallQualCat + OverallQualCat:TotalSF +FireplacesCat:TotalSF, data = train1) #0.7457
+# 
+# #mylm <- lm(SalePrice ~ TotalSF + BathTotal + BathTotal:TotalSF + GarageCars + GarageCars:TotalSF + OverallQualCat + OverallQualCat:TotalSF + FireplacesCat:TotalSF, data = train1) #0.7457
+# 
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal  + GarageCarsCat:TotalSF + OverallQualCat + OverallQualCat:TotalSF +FireplacesCat:TotalSF, data = train1) #Replaced GarageCarsCat #Not significant :(
+# 
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal  + GarageCarsCat + OverallQualCat + OverallQualCat:TotalSF +FireplacesCat:TotalSF, data = train1) #Replaced GarageCarsCat:TotalSF for only GarageCarsCat #All significant #0.7383
+# 
+# mylm <- lm(SalePrice ~ TotalSF + BathTotal  + GarageCarsCat + GarageCarsCat:BathTotal + OverallQualCat + OverallQualCat:TotalSF + FireplacesCat:TotalSF, data = train1) #Added GarageCarsCat:BathTotal #All significant #0.7407
+ 
+#summary(train1$GarageCars)
+# summary(mylm)
+# 
+# pander(summary(mylm)$coefficients)
+```
+
+
+```{r}
+#This was the model of my choice:
+
+mylm <- lm(SalePrice ~ TotalSF + BathTotal + GarageCarsCat + OverallQualCat + OverallQualCat:TotalSF + FireplacesCat:TotalSF, data = train1) #Added GarageCarsCat:BathTotal #All significant #0.7407
+
+pander(summary(mylm))
+```
+
+
+```{r}
+#Plotting graph 1
+
+plot(SalePrice ~ TotalSF, data = train1, main = "House Selling Prices when Bathroom Total is 0 - 1.5")
+
+b <- coef(mylm)
+
+#Thus...
+BathTotal = 0 #Small baths
+
+GarageCarsCat = 0
+OverallQualCat = 0
+FireplacesCat = 0
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[1], add = TRUE)
+
+GarageCarsCat = 1
+OverallQualCat = 0
+FireplacesCat = 0
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[2], add = TRUE)
+
+GarageCarsCat = 0
+OverallQualCat = 1
+FireplacesCat = 0
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[3], add = TRUE)
+
+GarageCarsCat = 0
+OverallQualCat = 0
+FireplacesCat = 1
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[4], add = TRUE)
+
+GarageCarsCat = 1
+OverallQualCat = 1
+FireplacesCat = 0
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[5], add = TRUE)
+
+GarageCarsCat = 0
+OverallQualCat = 1
+FireplacesCat = 1
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[6], add = TRUE)
+
+GarageCarsCat = 1
+OverallQualCat = 0
+FireplacesCat = 1
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[7], add = TRUE)
+
+GarageCarsCat = 1
+OverallQualCat = 1
+FireplacesCat = 1
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[8], add = TRUE)
+
+legend("topleft", title = "Garage, OvQual, Fire", legend= c("(000)", "(100)", "(010)", "(001)", "(110)", "(011)", "(101)", "(111)"), bty="n", lty=1, col=c(palette()[1], palette()[2], palette()[3], palette()[4], palette()[5], palette()[6], palette()[7], palette()[8]), cex=0.8)
+
+```
+
+
+```{r}
+#Plotting graph 2
+
+plot(SalePrice ~ TotalSF, data = train1, main = "House Selling Prices when Bathroom Total is 2 - 2.5")
+
+b <- coef(mylm)
+
+BathTotal = 1 #Medium baths
+
+GarageCarsCat = 0
+OverallQualCat = 0
+FireplacesCat = 0
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[1], add = TRUE)
+
+GarageCarsCat = 1
+OverallQualCat = 0
+FireplacesCat = 0
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[2], add = TRUE)
+
+GarageCarsCat = 0
+OverallQualCat = 1
+FireplacesCat = 0
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[3], add = TRUE)
+
+GarageCarsCat = 0
+OverallQualCat = 0
+FireplacesCat = 1
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[4], add = TRUE)
+
+GarageCarsCat = 1
+OverallQualCat = 1
+FireplacesCat = 0
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[5], add = TRUE)
+
+GarageCarsCat = 0
+OverallQualCat = 1
+FireplacesCat = 1
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[6], add = TRUE)
+
+GarageCarsCat = 1
+OverallQualCat = 0
+FireplacesCat = 1
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[7], add = TRUE)
+
+GarageCarsCat = 1
+OverallQualCat = 1
+FireplacesCat = 1
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[8], add = TRUE)
+
+legend("topleft", title = "Garage, OvQual, Fire", legend= c("(000)", "(100)", "(010)", "(001)", "(110)", "(011)", "(101)", "(111)"), bty="n", lty=1, col=c(palette()[1], palette()[2], palette()[3], palette()[4], palette()[5], palette()[6], palette()[7], palette()[8]), cex=0.8)
+
+```
+
+
+```{r}
+#Plotting graph 3
+
+plot(SalePrice ~ TotalSF, data = train1, main = "House Selling Prices when Bathroom Total is 3 - 3.5" )
+
+b <- coef(mylm)
+
+BathTotal = 2 #Large baths
+
+GarageCarsCat = 0
+OverallQualCat = 0
+FireplacesCat = 0
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[1], add = TRUE)
+
+GarageCarsCat = 1
+OverallQualCat = 0
+FireplacesCat = 0
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[2], add = TRUE)
+
+GarageCarsCat = 0
+OverallQualCat = 1
+FireplacesCat = 0
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[3], add = TRUE)
+
+GarageCarsCat = 0
+OverallQualCat = 0
+FireplacesCat = 1
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[4], add = TRUE)
+
+GarageCarsCat = 1
+OverallQualCat = 1
+FireplacesCat = 0
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[5], add = TRUE)
+
+GarageCarsCat = 0
+OverallQualCat = 1
+FireplacesCat = 1
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[6], add = TRUE)
+
+GarageCarsCat = 1
+OverallQualCat = 0
+FireplacesCat = 1
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[7], add = TRUE)
+
+GarageCarsCat = 1
+OverallQualCat = 1
+FireplacesCat = 1
+
+curve(b[1] + b[2]*TotalSF + b[3]*BathTotal + b[4]*BathTotal + b[5]*GarageCarsCat + b[6]*OverallQualCat + b[7]*TotalSF*OverallQualCat + b[8]*TotalSF*FireplacesCat, xname = "TotalSF", col = palette()[8], add = TRUE)
+
+
+legend("topleft", title = "Garage, OvQual, Fire", legend= c("(000)", "(100)", "(010)", "(001)", "(110)", "(011)", "(101)", "(111)"), bty="n", lty=1, col=c(palette()[1], palette()[2], palette()[3], palette()[4], palette()[5], palette()[6], palette()[7], palette()[8]), cex=0.8)
+
+```
+
+
+```{r}
+#Validation
+
+set.seed(121)
+n <- nrow(train1)
+nkeep <- sample(1:n, 1168)
+
+my_train <- train1[nkeep, ] #1168 values goes in here (80%)
+my_test <- train1[-nkeep, ] #n values go in here (the remaining 292 not keeps - 20%)
+```
+
+Interpretation:
+
+It's interesting to notice that the starter value of a home
+
+The higher the number of square foots the bigger the price of a home, according to our summary every additional square foot increases the price of a home by 28.35 usd. It's interesting to notice that if you add a fireplace to a home that affects the price per additional square foot which decreases by 6.754 usd. It's weird to notice as well that when the quality of a home is high the price seems to drop according to the model which could be an error somewhere in the code.
